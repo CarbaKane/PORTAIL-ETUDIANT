@@ -1,8 +1,8 @@
 # PORTAIL-ETUDIANT  
-Application web de gestion des aides étudiantes (bourses, subventions, etc.).  
+Application web de gestion des allocations (bourses, subventions, etc.).  
 
 ## 📋 Fonctionnalités  
-- Consultation des dossiers étudiants (`data/aides.csv`, `data/bourses.csv`)  
+- Consultation des dossiers étudiants (`data/rurals.csv`,`data/responsabilites.csv`,`data/subventions.csv`,`data/aides.csv`, `data/bourses.csv`)  
 - Interface administrative  
 - Génération de rapports  
 
