@@ -1,29 +1,29 @@
-from flask import Flask, render_template, request, jsonify, send_from_directory
+from flask import Flask, render_template, request, jsonify, send_from_directory, session
 import csv
 import os
 import datetime
 from werkzeug.utils import secure_filename
-
-
-
 import logging
 from logging.handlers import RotatingFileHandler
-
-# Configuration du logging
-log_handler = RotatingFileHandler('app.log', maxBytes=100000, backupCount=3)
-log_handler.setFormatter(logging.Formatter(
-    '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
-))
-
-
-
+import codecs
+import secrets  # NEW: Pour la gestion sécurisée des sessions
 
 app = Flask(__name__)
+app.secret_key = secrets.token_hex(32)  # NEW: Clé secrète robuste
 app.config['UPLOAD_FOLDER'] = 'data'
 app.config['ALLOWED_EXTENSIONS'] = {'csv'}
 app.config['VISITOR_LOG'] = 'data/visiteurs.txt'
+app.config['ADMIN_CREDENTIALS'] = {  # NEW: Externalisation des identifiants
+    'username': os.getenv('ADMIN_USER', 'DB'),
+    'password': os.getenv('ADMIN_PASS', 'CarbaDB')
+}
 
-# Variables globales pour le compteur
+# NEW: Configuration sécurité supplémentaire
+app.config['SESSION_COOKIE_SECURE'] = True
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+
+# Variables globales
 visitor_count = 0
 last_reset_date = datetime.date.today()
 
@@ -64,118 +64,69 @@ def get_visitor_count():
     reset_counter_if_new_day()
     return jsonify({'count': visitor_count})
 
-@app.route('/search', methods=['POST'])
-def search():
-    try:
-        cin = request.form.get('cin', '').strip()
-        telephone = request.form.get('telephone', '').strip()
-        
-        # Validation des entrées
-        if not cin and not telephone:
-            app.logger.warning("Aucun identifiant fourni")
-            return jsonify({'error': 'Veuillez fournir un CNI ou un téléphone'}), 400
-            
-        if cin and telephone:
-            app.logger.warning("Double identifiant fourni")
-            return jsonify({'error': 'Veuillez fournir soit le CNI soit le téléphone, pas les deux'}), 400
-
-        # Vérification des fichiers avant traitement
-        required_files = ['bourses.csv', 'responsabilites.csv', 'subventions.csv', 'aides.csv', 'rurals.csv']
-        missing_files = [f for f in required_files if not os.path.exists(os.path.join(app.config['UPLOAD_FOLDER'], f))]
-        
-        if missing_files:
-            app.logger.error(f"Fichiers manquants: {', '.join(missing_files)}")
-            return jsonify({'error': 'Fichiers de données manquants', 'missing': missing_files}), 500
-
-        # Recherche
-        results = {
-            'bourse': search_csv('bourses.csv', cin, telephone),
-            'responsabilite': search_csv('responsabilites.csv', cin, telephone),
-            'subvention': search_csv('subventions.csv', cin, telephone),
-            'aides': search_csv('aides.csv', cin, telephone),
-            'rurals': search_csv('rurals.csv', cin, telephone)
-        }
-
-        return jsonify(results)
-
-    except Exception as e:
-        app.logger.error(f"Erreur dans la recherche: {str(e)}")
-        return jsonify({'error': 'Erreur interne du serveur'}), 500
-
-
-def search_csv(filename, cin, telephone):
-    """Fonction générique de recherche dans les fichiers CSV"""
+def search_csv(filename, cin):
+    """Fonction de recherche dans les fichiers CSV par CNI"""
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-    result = {'found': False, 'nom': '', 'prenom': '', 'data': {}}
+    results = []  # NEW: Retourne une liste de tous les résultats
     
     try:
-        # Vérification initiale du fichier
         if not os.path.exists(filepath):
-            app.logger.error(f"Fichier {filename} introuvable dans {app.config['UPLOAD_FOLDER']}")
-            return result
+            app.logger.error(f"Fichier {filename} introuvable")
+            return results
 
-        with open(filepath, 'r', encoding='utf-8-sig') as f:
-            # Lire le fichier ligne par ligne en gérant les erreurs
-            try:
-                reader = csv.DictReader((line.replace('\0', '') for line in f), delimiter=';')
-            except csv.Error as e:
-                app.logger.error(f"Erreur de lecture CSV {filename}: {str(e)}")
-                return result
-
+        with codecs.open(filepath, 'r', encoding='utf-8-sig', errors='replace') as f:
+            reader = csv.DictReader((line.replace('\0', '') for line in f), delimiter=';')
             for row in reader:
                 try:
-                    # Nettoyage robuste des données
-                    cleaned_row = {}
-                    for k, v in row.items():
-                        if v is None:
-                            cleaned_row[k.strip()] = ''
-                        else:
-                            cleaned_row[k.strip()] = v.strip() if isinstance(v, str) else str(v)
-
-                    # Recherche par CNI ou téléphone
-                    current_cni = cleaned_row.get('CNI', '')
-                    current_phone = cleaned_row.get('TELEPHONES', '')
-
-                    if (cin and current_cni == cin) or (telephone and current_phone == telephone):
-                        return {
-                            'found': True,
+                    cleaned_row = {k.strip(): v.strip() if isinstance(v, str) else str(v) 
+                                for k, v in row.items()}
+                    if cin and cleaned_row.get('CNI', '') == cin:
+                        results.append({
                             'nom': cleaned_row.get('NOM', ''),
                             'prenom': cleaned_row.get('PRENOM', ''),
                             'data': cleaned_row
-                        }
+                        })
                 except Exception as row_error:
                     app.logger.warning(f"Erreur traitement ligne {row}: {str(row_error)}")
                     continue
 
     except Exception as e:
-        app.logger.error(f"Erreur critique avec {filename}: {str(e)}")
+        app.logger.error(f"Erreur fichier {filename}: {str(e)}")
         if app.debug:
             import traceback
             traceback.print_exc()
 
-    return result
+    return results  # NEW: Retourne tous les résultats trouvés
 
-
-
-def search_subvention(cin, telephone):
-    result = search_csv('subventions.csv', cin, telephone)
-    
-    if result['found']:
-        # Validation des champs obligatoires
-        if not all(k in result['data'] for k in ['MONTANT', 'TYPE']):
-            app.logger.warning(f"Subvention incomplète pour {cin or telephone}")
-            result['found'] = False
-            return result
+@app.route('/search', methods=['POST'])
+def search():
+    try:
+        cin = request.form.get('cin', '').strip()
+        
+        if not cin:
+            app.logger.warning("Aucun CNI fourni")
+            return jsonify({'error': 'Veuillez fournir un numéro CNI'}), 400
             
-        # Formatage sécurisé
-        try:
-            montant = int(result['data']['MONTANT'])
-            result['data']['MONTANT'] = f"{montant} FCFA"
-        except (ValueError, TypeError):
-            result['data']['MONTANT'] = "Montant invalide"
-    
-    return result
+        required_files = ['bourses.csv', 'responsabilites.csv', 'subventions.csv', 'aides.csv', 'rurals.csv']
+        missing_files = [f for f in required_files if not os.path.exists(os.path.join(app.config['UPLOAD_FOLDER'], f))]
+        
+        if missing_files:
+            app.logger.error(f"Fichiers manquants: {missing_files}")
+            return jsonify({'error': 'Fichiers de données manquants', 'missing': missing_files}), 500
 
+        results = {
+            'bourse': search_csv('bourses.csv', cin),
+            'responsabilite': search_csv('responsabilites.csv', cin),
+            'subvention': search_csv('subventions.csv', cin),
+            'aides': search_csv('aides.csv', cin),
+            'rurals': search_csv('rurals.csv', cin)
+        }
+
+        return jsonify(results)
+
+    except Exception as e:
+        app.logger.error(f"Erreur recherche: {str(e)}")
+        return jsonify({'error': 'Erreur interne du serveur'}), 500
 
 @app.route('/check-files')
 def check_files():
@@ -189,8 +140,14 @@ def check_files():
     return jsonify(files)
 
 
-
-
+@app.route('/admin-login', methods=['POST'])  # NEW: Endpoint séparé pour le login
+def admin_login():
+    data = request.get_json()
+    if (data.get('username') == app.config['ADMIN_CREDENTIALS']['username'] and 
+        data.get('password') == app.config['ADMIN_CREDENTIALS']['password']):
+        session['admin_logged_in'] = True
+        return jsonify({'success': True})
+    return jsonify({'error': 'Identifiants incorrects'}), 401
 
 
 
@@ -237,24 +194,10 @@ def serve_images(filename):
 def favicon():
     return send_from_directory('images', 'favicon.ico', mimetype='image/vnd.microsoft.icon')
 
-
-
-@app.route('/')
-def home():
-    return "Hello World"
-
-
-
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
-
-
-# if __name__ == '__main__':
-#     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+    if not os.path.exists(app.config['VISITOR_LOG']):
+        with open(app.config['VISITOR_LOG'], 'w', encoding='utf-8') as f:
+            f.write(f"=== Log des visiteurs - {datetime.date.today()} ===\n")
     
-#     if not os.path.exists(app.config['VISITOR_LOG']):
-#         with open(app.config['VISITOR_LOG'], 'w', encoding='utf-8') as f:
-#             f.write(f"=== Log des visiteurs - {datetime.date.today()} ===\n")
-    
-#     app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5002, debug=False)  # NEW: debug=False en production

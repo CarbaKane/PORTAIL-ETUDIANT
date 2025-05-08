@@ -7,7 +7,28 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="/style.css">
     <style>
+        .loading-spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top: 4px solid #1a237e;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .info-note {
+            background-color: #f0f9ff;
+            border-left: 4px solid #3b82f6;
+            padding: 12px;
+            margin-top: 20px;
+            border-radius: 0 4px 4px 0;
+        }
         body {
             background-image: url('/images/processus-creatif.png');
             background-size: cover;
@@ -15,67 +36,54 @@
             background-attachment: fixed;
             min-height: 100vh;
         }
-        
         .blur-bg {
             backdrop-filter: blur(10px);
             background-color: rgba(255, 255, 255, 0.85);
         }
-        
         .logo-container {
             background: linear-gradient(135deg, #1a237e, #283593);
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
         }
-        
         .input-field {
             transition: all 0.3s ease;
             border: 2px solid #e5e7eb;
         }
-        
         .input-field:focus {
             border-color: #1a237e;
             box-shadow: 0 0 0 3px rgba(26, 35, 126, 0.3);
         }
-        
         .search-btn {
             background: linear-gradient(135deg, #1a237e, #283593);
             transition: all 0.3s ease;
         }
-        
         .search-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
         }
-        
         .admin-btn {
             background: linear-gradient(135deg, #6b7280, #4b5563);
             transition: all 0.3s ease;
         }
-        
         .admin-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
         }
-        
         .ad-card {
             background: linear-gradient(135deg, #ffc107, #ffab00);
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
         }
-        
         .result-card {
             border-left: 4px solid #1a237e;
             transition: all 0.3s ease;
         }
-        
         .result-card:hover {
             transform: translateY(-3px);
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         }
-        
         .highlight {
             color: #1a237e;
             font-weight: 600;
         }
-        
         .file-input-label {
             display: block;
             padding: 1rem;
@@ -85,36 +93,30 @@
             cursor: pointer;
             transition: all 0.3s ease;
         }
-        
         .file-input-label:hover {
             border-color: #1a237e;
             background-color: rgba(26, 35, 126, 0.05);
         }
-        
         .logo-img {
             height: 4rem;
             width: 4rem;
             object-fit: contain;
         }
-        
         .success-message {
             background-color: #f0fdf4;
             color: #166534;
             border-left: 4px solid #22c55e;
         }
-        
         .info-message {
             background-color: #eff6ff;
             color: #1e40af;
             border-left: 4px solid #3b82f6;
         }
-        
         .error-message {
             background-color: #fef2f2;
             color: #b91c1c;
             border-left: 4px solid #ef4444;
         }
-        
         .logout-btn {
             padding: 8px 16px;
             background-color: #f44336;
@@ -125,11 +127,9 @@
             font-size: 14px;
             margin-left: 10px;
         }
-        
         .logout-btn:hover {
             background-color: #d32f2f;
         }
-        
         .visitor-counter {
             position: fixed;
             bottom: 20px;
@@ -141,34 +141,35 @@
             font-size: 14px;
             z-index: 1000;
         }
-
         .text-primary {
             color: #1a237e;
         }
-
         .bg-primary {
             background-color: #1a237e;
         }
-
         .text-accent {
             color: #ffc107;
         }
-
         .bg-accent {
             background-color: #ffc107;
+        }
+        .disabled-btn {
+            background: linear-gradient(135deg, #9ca3af, #6b7280) !important;
+            cursor: not-allowed !important;
+            opacity: 0.7 !important;
         }
     </style>
 </head>
 <body class="font-sans">
     <div class="container mx-auto px-4 py-8">
-        <!-- Admin Login Button (caché par défaut) -->
+        <!-- Admin Login Button -->
         <div class="flex justify-end mb-4">
             <button id="adminToggle" class="admin-btn text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline flex items-center">
                 <i class="fas fa-user-shield mr-2"></i> Admin
             </button>
         </div>
         
-        <!-- Admin Panel (caché par défaut) -->
+        <!-- Admin Panel -->
         <div id="adminPanel" class="admin-panel blur-bg rounded-xl p-6 mb-8 shadow-lg" style="display: none;">
             <div class="flex justify-between items-center mb-6">
                 <h2 class="text-xl font-semibold text-gray-800">Interface Administrateur</h2>
@@ -273,32 +274,19 @@
                         <div>
                             <label for="cin" class="block text-sm font-medium text-gray-700 mb-1">Numéro CNI</label>
                             <div class="relative">
-                                <input type="text" id="cin" name="cin" placeholder="Ex: 12345678" 
-                                    class="input-field w-full px-4 py-3 rounded-lg focus:outline-none">
+                                <input type="text" id="cin" name="cin" placeholder="Ex: 1A234B56C789D" 
+                                    class="input-field w-full px-4 py-3 rounded-lg focus:outline-none"
+                                    maxlength="14"
+                                    oninput="this.value = this.value.slice(0, 14)"
+                                    title="14 caractères maximum (chiffres et lettres)">
                                 <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                                     <i class="fas fa-id-card text-gray-400"></i>
                                 </div>
                             </div>
+                            <p class="text-xs text-gray-500 mt-1">14 caractères maximum (chiffres et lettres)</p>
                         </div>
                         
-                        <div class="relative flex items-center">
-                            <div class="flex-grow border-t border-gray-300"></div>
-                            <span class="flex-shrink mx-4 text-gray-500 font-medium">OU</span>
-                            <div class="flex-grow border-t border-gray-300"></div>
-                        </div>
-                        
-                        <div>
-                            <label for="telephone" class="block text-sm font-medium text-gray-700 mb-1">Numéro de téléphone</label>
-                            <div class="relative">
-                                <input type="text" id="telephone" name="telephone" placeholder="Ex: 770123456" 
-                                    class="input-field w-full px-4 py-3 rounded-lg focus:outline-none">
-                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                                    <i class="fas fa-phone-alt text-gray-400"></i>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <button type="submit" class="search-btn w-full text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:shadow-outline flex items-center justify-center">
+                        <button type="submit" id="searchBtn" class="search-btn w-full text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:shadow-outline flex items-center justify-center">
                             <i class="fas fa-search mr-2"></i> Vérifier mon état
                         </button>
                     </form>
@@ -313,6 +301,8 @@
                         </button>
                     </div>
                     <div id="message" class="mb-4"></div>
+
+                    <div id="loadingSpinner" class="loading-spinner hidden"></div>
                     <div id="tables" class="space-y-4"></div>
                 </div>
             </div>
@@ -363,8 +353,8 @@
         <div class="mt-12 text-center text-gray-600 text-sm">
             <div class="flex items-center justify-center space-x-2">
                 <img src="/images/DB-logo.png" alt="Logo" class="h-6 w-6">
-                <a href="http://127.0.0.1:5000" class="text-primary hover:text-blue-800" target="_blank">
-                    127.0.0.1:5000
+                <a href="www.directiondesbourses.sn" class="text-primary hover:text-blue-800" target="_blank">
+                    www.directiondesbourses.sn
                 </a>
             </div>
             <p class="mt-2">© 2025 Direction des Bourses. Tous droits réservés.</p>
@@ -378,6 +368,33 @@
     </div>
 
     <script>
+        // Stockage des tentatives de CNI
+        const attemptStorage = {
+            get: function(cin) {
+                const attempts = JSON.parse(localStorage.getItem('cniAttempts')) || {};
+                // Reset si dernière tentative date de plus de 30min
+                if (attempts[cin] && Date.now() - attempts[cin].lastAttempt > 30 * 60 * 1000) {
+                    attempts[cin] = { count: 0, lastAttempt: 0 };
+                }
+                return attempts[cin] || { count: 0, lastAttempt: 0 };
+            },
+            set: function(cin, data) {
+                const attempts = JSON.parse(localStorage.getItem('cniAttempts')) || {};
+                attempts[cin] = data;
+                localStorage.setItem('cniAttempts', JSON.stringify(attempts));
+            },
+            clearOldEntries: function() {
+                const attempts = JSON.parse(localStorage.getItem('cniAttempts')) || {};
+                const now = Date.now();
+                for (const cin in attempts) {
+                    if (now - attempts[cin].lastAttempt > 24 * 60 * 60 * 1000) {
+                        delete attempts[cin];
+                    }
+                }
+                localStorage.setItem('cniAttempts', JSON.stringify(attempts));
+            }
+        };
+
         document.addEventListener('DOMContentLoaded', function() {
             // Student interface elements
             const searchForm = document.getElementById('searchForm');
@@ -386,6 +403,8 @@
             const messageDiv = document.getElementById('message');
             const tablesDiv = document.getElementById('tables');
             const newSearchBtn = document.getElementById('newSearch');
+            const searchBtn = document.getElementById('searchBtn');
+            const loadingSpinner = document.getElementById('loadingSpinner');
             
             // Admin interface elements
             const adminToggle = document.getElementById('adminToggle');
@@ -429,18 +448,13 @@
             
             // Logout functionality
             logoutButton.addEventListener('click', function() {
-                // Clear admin session
                 adminContent.classList.add('hidden');
                 logoutButton.classList.add('hidden');
                 adminLoginForm.reset();
                 fileUploadForm.reset();
                 fileNameSpan.textContent = "Aucun fichier sélectionné";
                 uploadStatus.classList.add('hidden');
-                
-                // Clear any admin messages
                 showMessage("", "success", adminLoginForm);
-                
-                // Hide the admin panel
                 adminPanel.style.display = 'none';
             });
             
@@ -465,7 +479,6 @@
                     return;
                 }
                 
-                // Validate file name based on selected type
                 const expectedNames = {
                     'bourses': 'bourses.csv',
                     'subventions': 'subventions.csv',
@@ -513,36 +526,82 @@
                 e.preventDefault();
                 
                 const cin = document.getElementById('cin').value.trim();
-                const telephone = document.getElementById('telephone').value.trim();
                 
-                // Validate input
-                if (cin && telephone) {
-                    showMessage("Veuillez fournir soit le CNI soit le téléphone, pas les deux", "error");
-                    return;
-                } else if (!cin && !telephone) {
-                    showMessage("Veuillez fournir un CNI ou un téléphone", "error");
+                // Validation de base
+                if (!cin) {
+                    showMessage("Veuillez fournir un numéro CNI", "error");
                     return;
                 }
                 
-                // Show loading state
-                messageDiv.innerHTML = '<div class="flex justify-center"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div></div>';
+                if (cin.length > 14) {
+                    showMessage("Le numéro CNI ne doit pas dépasser 14 caractères", "error");
+                    return;
+                }
+                
+                if (!/^[a-zA-Z0-9]{1,14}$/.test(cin)) {
+                    showMessage("Le CNI ne doit contenir que des chiffres et des lettres", "error");
+                    return;
+                }
+                
+                // Vérification des tentatives
+                const attemptData = attemptStorage.get(cin);
+                const now = Date.now();
+                const thirtyMinutes = 30 * 60 * 1000;
+                
+                if (attemptData.count >= 5 && (now - attemptData.lastAttempt < thirtyMinutes)) {
+                    const timeLeft = Math.ceil((thirtyMinutes - (now - attemptData.lastAttempt)) / 60000);
+                    showMessage(`
+                        <div class="text-center">
+                            <i class="fas fa-clock text-2xl text-yellow-500 mb-2"></i>
+                            <p>Vous avez dépassé la limite de tentatives (5/5).</p>
+                            <p class="font-semibold">Veuillez patienter ${timeLeft} minute(s) avant de réessayer.</p>
+                            <p class="text-sm mt-2">Pour toute urgence, contactez la Direction des Bourses.</p>
+                        </div>
+                    `, "warning");
+                    
+                    searchBtn.disabled = true;
+                    searchBtn.classList.add('disabled-btn');
+                    
+                    setTimeout(() => {
+                        searchBtn.disabled = false;
+                        searchBtn.classList.remove('disabled-btn');
+                    }, thirtyMinutes - (now - attemptData.lastAttempt));
+                    
+                    return;
+                }
+                
+                // Mise à jour du compteur
+                const newCount = (now - attemptData.lastAttempt < thirtyMinutes) ? attemptData.count + 1 : 1;
+                attemptStorage.set(cin, {
+                    count: newCount,
+                    lastAttempt: now
+                });
+                
+                // Nettoyage des anciennes entrées
+                attemptStorage.clearOldEntries();
+                
+                // Affichage du chargement
                 resultsSection.classList.remove('hidden');
+                tablesDiv.innerHTML = '';
+                messageDiv.innerHTML = '';
+                loadingSpinner.classList.remove('hidden');
                 
-                // Create form data
+                // Envoi de la requête
                 const formData = new FormData();
-                if (cin) formData.append('cin', cin);
-                if (telephone) formData.append('telephone', telephone);
+                formData.append('cin', cin);
                 
-                // Update visitor counter
-                updateVisitorCounter(cin || telephone, 'search');
+                updateVisitorCounter(cin, 'search');
                 
-                // Make API call
                 fetch('/search', {
                     method: 'POST',
                     body: formData
                 })
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) throw new Error('Erreur réseau');
+                    return response.json();
+                })
                 .then(data => {
+                    loadingSpinner.classList.add('hidden');
                     if (data.error) {
                         showMessage(data.error, "error");
                     } else {
@@ -550,6 +609,7 @@
                     }
                 })
                 .catch(error => {
+                    loadingSpinner.classList.add('hidden');
                     console.error('Error:', error);
                     showMessage("Une erreur s'est produite lors de la recherche", "error");
                 });
@@ -559,8 +619,6 @@
             newSearchBtn.addEventListener('click', function() {
                 resultsSection.classList.add('hidden');
                 searchForm.reset();
-                
-                // Update counter for new search
                 updateVisitorCounter('', 'new_search');
             });
             
@@ -593,28 +651,85 @@
             }
             
             function displayResults(results) {
-                if (!results) {
-                    showMessage("Une erreur s'est produite lors de la recherche", "error");
+                const resultsSection = document.getElementById('results');
+                const resultTitle = document.getElementById('resultTitle');
+                const messageDiv = document.getElementById('message');
+                const tablesDiv = document.getElementById('tables');
+                
+                resultsSection.classList.remove('hidden');
+                tablesDiv.innerHTML = '';
+                messageDiv.innerHTML = '';
+
+                // Trouver le premier résultat valide pour le titre
+                const firstResult = Object.values(results).flat().find(r => r);
+                if (firstResult) {
+                    resultTitle.textContent = `Bonjour ${firstResult.prenom} ${firstResult.nom}`;
+                } else {
+                    resultTitle.textContent = "Résultats de recherche";
+                    showMessage("Aucune information trouvée pour votre profil", "info");
                     return;
                 }
 
-                const hasResults = Object.values(results).some(r => r.found);
-                const student = findFirstValidResult(results);
-                resultTitle.textContent = `Bonjour ${student.prenom} ${student.nom}`;
-                
-                if (!hasResults) {
-                    showMessage("Aucune information de bourse trouvée pour votre profil", "info");
-                    tablesDiv.innerHTML = '';
-                } else {
-                    showMessage("Voici vos informations de bourse :", "success");
-                    
-                    tablesDiv.innerHTML = '';
-                    for (const [key, result] of Object.entries(results)) {
-                        if (result && result.found) {
-                            tablesDiv.appendChild(createResultCard(result, getTypeLabel(key)));
-                        }
+                // Afficher tous les résultats par type
+                for (const [type, entries] of Object.entries(results)) {
+                    if (entries.length > 0) {
+                        const typeLabel = getTypeLabel(type);
+                        const section = document.createElement('div');
+                        section.className = 'mb-8';
+                        
+                        const header = document.createElement('h3');
+                        header.className = 'text-xl font-bold text-primary mb-4';
+                        header.textContent = typeLabel;
+                        section.appendChild(header);
+
+                        // NEW: Colonnes à exclure
+                        const excludedColumns = ['NOM', 'PRENOM', 'TYPE'];
+                        
+                        // Créer un tableau horizontal pour chaque type
+                        const table = document.createElement('div');
+                        table.className = 'overflow-x-auto';
+                        
+                        // Filtrer les colonnes à afficher
+                        const columnsToShow = Object.keys(entries[0].data)
+                            .filter(key => !excludedColumns.includes(key));
+                        
+                        const tableHtml = `
+                            <table class="min-w-full bg-white rounded-lg overflow-hidden">
+                                <thead class="bg-primary text-white">
+                                    <tr>
+                                        ${columnsToShow.map(key => 
+                                            `<th class="py-3 px-4 text-left">${key}</th>`
+                                        ).join('')}
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-200">
+                                    ${entries.map(entry => `
+                                        <tr>
+                                            ${columnsToShow.map(key => 
+                                                `<td class="py-3 px-4">${entry.data[key] || '-'}</td>`
+                                            ).join('')}
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        `;
+                        
+                        table.innerHTML = tableHtml;
+                        section.appendChild(table);
+                        tablesDiv.appendChild(section);
                     }
                 }
+
+                // Ajout du message d'information
+                const infoNote = document.createElement('div');
+                infoNote.className = 'info-note text-blue-800 mt-6';
+                infoNote.innerHTML = `
+                    <p><strong>Note importante :</strong> 
+                    Bonjour, veuillez consulter vos données personnelles. 
+                    En cas d'erreur, veuillez vous rapprocher de la Direction des Bourses 
+                    avec une photocopie de votre carte d'identité légalisée.</p>
+                `;
+                tablesDiv.appendChild(infoNote);
             }
             
             function getTypeLabel(key) {
@@ -626,74 +741,6 @@
                     'aides': 'Aides'
                 };
                 return labels[key] || key;
-            }
-            
-            function findFirstValidResult(results) {
-                return Object.values(results).find(r => r && r.found) || { nom: '', prenom: '' };
-            }
-            
-            function createResultCard(result, type) {
-                const card = document.createElement('div');
-                card.className = 'result-card bg-white rounded-lg p-5 shadow';
-                
-                const header = document.createElement('div');
-                header.className = 'text-lg font-semibold text-primary mb-3';
-                header.textContent = type;
-                
-                const body = document.createElement('div');
-                
-                // Create table
-                const table = document.createElement('table');
-                table.className = 'w-full';
-                
-                // Add name rows
-                let rows = `
-                    <tr>
-                        <td class="py-2 pr-4 font-medium text-gray-600">Nom</td>
-                        <td class="py-2 font-semibold text-primary">${result.nom}</td>
-                    </tr>
-                    <tr>
-                        <td class="py-2 pr-4 font-medium text-gray-600">Prénom</td>
-                        <td class="py-2 font-semibold text-primary">${result.prenom}</td>
-                    </tr>
-                `;
-                
-                // Add other fields
-                const fields = [
-                    { key: 'DATE DE NAISSANCE', label: 'Date naissance' },
-                    { key: 'TELEPHONES', label: 'Téléphone' },
-                    { key: 'UNIVERSITE', label: 'Université' },
-                    { key: 'FILIERE', label: 'Filière' },
-                    { key: 'MONTANT', label: 'Montant', format: v => `${v} FCFA` },
-                    { key: 'TYPE', label: 'Type' },
-                    { key: 'MODE DE PAIMENT', label: 'Paiement' },
-                    { key: 'ANNEE', label: 'Année' },
-                    { key: 'MOIS', label: 'Mois' }
-                ];
-                
-                for (const field of fields) {
-                    if (result.data[field.key]) {
-                        let value = result.data[field.key];
-                        if (field.format) {
-                            value = field.format(value);
-                        }
-                        
-                        rows += `
-                            <tr>
-                                <td class="py-2 pr-4 font-medium text-gray-600">${field.label}</td>
-                                <td class="py-2">${value}</td>
-                            </tr>
-                        `;
-                    }
-                }
-                
-                table.innerHTML = rows;
-                body.appendChild(table);
-                
-                card.appendChild(header);
-                card.appendChild(body);
-                
-                return card;
             }
             
             function showMessage(message, type, parentElement = document) {
@@ -718,6 +765,10 @@
                     },
                     'info': {
                         icon: 'info-circle',
+                        style: 'info-message'
+                    },
+                    'warning': {
+                        icon: 'exclamation-triangle',
                         style: 'info-message'
                     }
                 }[type] || {
