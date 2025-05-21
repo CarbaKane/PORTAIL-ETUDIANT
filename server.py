@@ -139,7 +139,6 @@ def check_files():
     }
     return jsonify(files)
 
-
 @app.route('/admin-login', methods=['POST'])  # NEW: Endpoint séparé pour le login
 def admin_login():
     data = request.get_json()
@@ -148,9 +147,6 @@ def admin_login():
         session['admin_logged_in'] = True
         return jsonify({'success': True})
     return jsonify({'error': 'Identifiants incorrects'}), 401
-
-
-
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
@@ -200,4 +196,6 @@ if __name__ == '__main__':
         with open(app.config['VISITOR_LOG'], 'w', encoding='utf-8') as f:
             f.write(f"=== Log des visiteurs - {datetime.date.today()} ===\n")
     
-    app.run(host='0.0.0.0', port=5002, debug=False)  # NEW: debug=False en production
+    # Modification importante ici pour utiliser le port de Railway
+    port = int(os.environ.get("PORT", 5002))
+    app.run(host='0.0.0.0', port=port, debug=False)  # debug=False en production
